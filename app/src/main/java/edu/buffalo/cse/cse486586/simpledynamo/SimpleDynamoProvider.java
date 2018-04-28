@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -40,6 +42,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 	static String myPort = "";
 	static final int SERVER_PORT = 10000;
 
+	Lock lock = new ReentrantLock();
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
@@ -92,6 +95,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 		try {
 
+			lock.lock();
 			Log.d("Insert" , "Start the code");
 
 			String key = values.get("key").toString();
@@ -116,6 +120,10 @@ public class SimpleDynamoProvider extends ContentProvider {
 			Log.e(TAG, "Pratibha Alert No Such Algo Exception");
 			return null;
 		}
+		finally {
+			lock.unlock();
+		}
+
 	}
 
 	private String getOwnerPort(String hashKey){
@@ -379,8 +387,16 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 			try {
 
-				deleteMyData("*");
-				recoverMyData();
+				try{
+					lock.lock();
+					deleteMyData("*");
+					recoverMyData();
+				}
+				catch (Exception e){}
+				finally {
+					lock.unlock();
+				}
+
 
 				while(true) {
 
@@ -476,6 +492,8 @@ public class SimpleDynamoProvider extends ContentProvider {
 			String[] selectionArgs, String sortOrder) {
 		// TODO Auto-generated method stub query method
 
+
+		lock.lock();
 		Log.d("Query" , "Entered Query");
 
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
@@ -550,6 +568,9 @@ public class SimpleDynamoProvider extends ContentProvider {
 		}
 		catch (Exception e){
 
+		}
+		finally {
+			lock.unlock();
 		}
 		return null;
 	}
