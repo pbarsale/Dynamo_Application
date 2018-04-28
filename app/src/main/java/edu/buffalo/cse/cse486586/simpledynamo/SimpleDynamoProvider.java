@@ -42,7 +42,9 @@ public class SimpleDynamoProvider extends ContentProvider {
 	static String myPort = "";
 	static final int SERVER_PORT = 10000;
 
-	Lock lock = new ReentrantLock();
+	Lock query_lock = new ReentrantLock();
+	Lock delete_lock = new ReentrantLock();
+	Lock insert_lock = new ReentrantLock();
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
@@ -52,6 +54,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 		Log.d("Delete" , "Selection is " + selection);
 
 		try{
+			delete_lock.lock();
 			if(!(selection.equals("@") || selection.equals("*"))){
 
 				Log.d("query", "Only single key is deleted");
@@ -80,6 +83,9 @@ public class SimpleDynamoProvider extends ContentProvider {
 		catch (Exception e){
 
 		}
+		finally {
+			delete_lock.unlock();
+		}
 		return 0;
 	}
 
@@ -95,7 +101,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 		try {
 
-			lock.lock();
+			insert_lock.lock();
 			Log.d("Insert" , "Start the code");
 
 			String key = values.get("key").toString();
@@ -121,9 +127,8 @@ public class SimpleDynamoProvider extends ContentProvider {
 			return null;
 		}
 		finally {
-			lock.unlock();
+			insert_lock.unlock();
 		}
-
 	}
 
 	private String getOwnerPort(String hashKey){
@@ -388,13 +393,17 @@ public class SimpleDynamoProvider extends ContentProvider {
 			try {
 
 				try{
-					lock.lock();
+					insert_lock.lock();
+					delete_lock.lock();
+					query_lock.lock();
 					deleteMyData("*");
 					recoverMyData();
 				}
 				catch (Exception e){}
 				finally {
-					lock.unlock();
+					query_lock.unlock();
+					delete_lock.unlock();
+					insert_lock.unlock();
 				}
 
 
@@ -493,7 +502,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 		// TODO Auto-generated method stub query method
 
 
-		lock.lock();
+		query_lock.lock();
 		Log.d("Query" , "Entered Query");
 
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
@@ -570,7 +579,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 		}
 		finally {
-			lock.unlock();
+			query_lock.unlock();
 		}
 		return null;
 	}
