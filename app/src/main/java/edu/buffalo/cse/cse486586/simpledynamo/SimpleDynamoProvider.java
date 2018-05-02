@@ -31,6 +31,13 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import Messenger.DBHandler;
 
+/*References:
+https://developer.android.com/reference/android/database/MatrixCursor.html
+https://google-developer-training.gitbooks.io/android-developer-fundamentals-course-concepts/content/en/Unit%204/101_c_sqlite_database.html
+https://developer.android.com/guide/topics/providers/content-provider-creating.html
+https://developer.android.com/reference/java/util/concurrent/locks/Lock
+*/
+
 public class SimpleDynamoProvider extends ContentProvider {
 
 	static final String[] REMOTE_PORTS = {"11124","11112","11108","11116","11120"};
@@ -50,14 +57,14 @@ public class SimpleDynamoProvider extends ContentProvider {
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
 
 		// TODO Auto-generated method stub
-		Log.d("Delete" , "Entered Delete");
-		Log.d("Delete" , "Selection is " + selection);
+		//Log.d("Delete" , "Entered Delete");
+		//Log.d("Delete" , "Selection is " + selection);
 
 		try{
 			delete_lock.lock();
 			if(!(selection.equals("@") || selection.equals("*"))){
 
-				Log.d("query", "Only single key is deleted");
+				//Log.d("query", "Only single key is deleted");
 				String hashKey = genHash(selection);
 				String owner_port = getOwnerPort(hashKey);
 				String port_list[] = getReplicatePorts(owner_port);
@@ -102,15 +109,15 @@ public class SimpleDynamoProvider extends ContentProvider {
 		try {
 
 			insert_lock.lock();
-			Log.d("Insert" , "Start the code");
+			//Log.d("Insert" , "Start the code");
 
 			String key = values.get("key").toString();
 			String hashkey = this.genHash(key);
 			String value = values.get("value").toString();
 
-			Log.d("Insert" , "key : " + key);
-			Log.d("Insert" , "hashkey : " + hashkey);
-			Log.d("Insert" , "value : " + value);
+			//Log.d("Insert" , "key : " + key);
+			//Log.d("Insert" , "hashkey : " + hashkey);
+			//Log.d("Insert" , "value : " + value);
 
 			String owner_port = getOwnerPort(hashkey);
 
@@ -133,18 +140,18 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 	private String getOwnerPort(String hashKey){
 
-		Log.d("getOwnerPort" , "Entered the code");
+		//Log.d("getOwnerPort" , "Entered the code");
 		int len = REMOTE_PORTS.length;
-		Log.d("getOwnerPort" , "len is " + len);
+		//Log.d("getOwnerPort" , "len is " + len);
 		if((hashKey.compareTo(hashInfo.get(REMOTE_PORTS[0]))<=0) || (hashKey.compareTo(hashInfo.get(REMOTE_PORTS[len-1]))>0))
 		{
-			Log.d("getOwnerPort" , "First check correct, 0th port");
+			//Log.d("getOwnerPort" , "First check correct, 0th port");
 			return REMOTE_PORTS[0];
 		}
 
 		for(int i=1;i<len;i++)
 		{
-			Log.d("Insert" , "checking for " + REMOTE_PORTS[i]);
+			//Log.d("Insert" , "checking for " + REMOTE_PORTS[i]);
 			if(valueBetween(hashInfo.get(REMOTE_PORTS[i-1]),hashInfo.get(REMOTE_PORTS[i]),hashKey))
 				return REMOTE_PORTS[i];
 		}
@@ -152,26 +159,26 @@ public class SimpleDynamoProvider extends ContentProvider {
 	}
 
 	private boolean valueBetween(String start, String end, String value) {
-		Log.d("valueBetween" , "Calculating the value");
+		//Log.d("valueBetween" , "Calculating the value");
 		return (value.compareTo(start) > 0 && end.compareTo(value) >=0);
 	}
 
 	private void insertIntoDB(String key, String value)
 	{
-		Log.v("db", "Entering Insert into DB");
+		//Log.v("db", "Entering Insert into DB");
 		ContentValues mContentValues = new ContentValues();
 		mContentValues.put("key",key);
 		mContentValues.put("value",value);
 
-		Log.v("db", "About to get writable database");
+		//Log.v("db", "About to get writable database");
 		SQLiteDatabase sqlDB = myDB.getWritableDatabase();
-		Log.v("db", "got writable database");
+		//Log.v("db", "got writable database");
 
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 		queryBuilder.setTables("Tb_KeyPair");
 
 		long result = sqlDB.insertWithOnConflict("Tb_KeyPair",null,mContentValues,SQLiteDatabase.CONFLICT_REPLACE);
-		Log.d("InsertIntoDB" , "Wrote key " + key + " value : " + value);
+		//Log.d("InsertIntoDB" , "Wrote key " + key + " value : " + value);
 
 	}
 
@@ -183,20 +190,20 @@ public class SimpleDynamoProvider extends ContentProvider {
 		try{
 
 			clearAndSetMap();
-			Log.d("OnCreate","The system has started coding");
+			//Log.d("OnCreate","The system has started coding");
 			myDB = new DBHandler(getContext(),null,null,1);
-			Log.d("OnCreate","Line1");
+			//Log.d("OnCreate","Line1");
 
 			TelephonyManager tel = (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
 			String portStr = tel.getLine1Number().substring(tel.getLine1Number().length() - 4);
 
-			Log.d("OnCreate","Line2 : portstr " + portStr);
+			//Log.d("OnCreate","Line2 : portstr " + portStr);
 
 			myHash = this.genHash(portStr);
-			Log.d("OnCreate","Line3 : Myhash " + myHash);
+			//Log.d("OnCreate","Line3 : Myhash " + myHash);
 
 			myPort = String.valueOf((Integer.parseInt(portStr) * 2));
-			Log.d("OnCreate","Line4 : myport " + myPort);
+			//Log.d("OnCreate","Line4 : myport " + myPort);
 
 			ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
 			new ServerTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, serverSocket);
@@ -233,11 +240,11 @@ public class SimpleDynamoProvider extends ContentProvider {
 		protected Void doInBackground(String... msgs) {
 			try
 			{
-				Log.d("ClientTask", "Starting the code");
+				//Log.d("ClientTask", "Starting the code");
 
 				String msgType = msgs[0];
 
-				Log.d("ClientTask", "Message Type " + msgType);
+				//Log.d("ClientTask", "Message Type " + msgType);
 
 
 				if(msgType.equals("ReplicateAndForward")) {
@@ -265,17 +272,17 @@ public class SimpleDynamoProvider extends ContentProvider {
 				}
 				else if(msgType.equals("Forward")){
 
-					Log.d("Client Task" , "Forward Function");
+					//Log.d("Client Task" , "Forward Function");
 
 					String key = msgs[1];
 					String value = msgs[2];
 					String ports[] = new String[]{msgs[3],msgs[4]};
 					String message = "Replicate###" + key + "###" + value + "###" + myPort;
 
-					Log.d("Insert" , "key : " + key);
-					Log.d("Insert" , "value : " + value);
-					Log.d("Insert" , "ports : " + ports[0] + "  " + ports[1]);
-					Log.d("Insert" , "Message : " + message);
+					//Log.d("Insert" , "key : " + key);
+					//Log.d("Insert" , "value : " + value);
+					//Log.d("Insert" , "ports : " + ports[0] + "  " + ports[1]);
+					//Log.d("Insert" , "Message : " + message);
 
 					for(String port : ports){
 						SendDataToPort(port, message);
@@ -292,7 +299,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 	private String[] getReplicatePorts(String ownerPort){
 
-		Log.d("getReplicatePorts","Owner port " + ownerPort);
+		//Log.d("getReplicatePorts","Owner port " + ownerPort);
 
 		String replicatePorts[] = new String[3];
 		replicatePorts[0] = ownerPort;
@@ -300,10 +307,10 @@ public class SimpleDynamoProvider extends ContentProvider {
 		for(int i=0; i<REMOTE_PORTS.length;i++)
 			if(REMOTE_PORTS[i].equals(ownerPort))
 			{
-				Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[i]);
-				Log.d("getReplicatePorts","i: " + i);
-				Log.d("getReplicatePorts","i+1: " + (i+1)%5);
-				Log.d("getReplicatePorts","i+2: " + (i+2)%5);
+				//Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[i]);
+				//Log.d("getReplicatePorts","i: " + i);
+				//Log.d("getReplicatePorts","i+1: " + (i+1)%5);
+				//Log.d("getReplicatePorts","i+2: " + (i+2)%5);
 
 				replicatePorts[1] = REMOTE_PORTS[(i+1)%5];
 				replicatePorts[2] = REMOTE_PORTS[(i+2)%5];
@@ -315,19 +322,19 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 	private String[] getPreviousPorts(String ownerPort){
 
-		Log.d("getPreviousPorts","Owner port " + ownerPort);
+		//Log.d("getPreviousPorts","Owner port " + ownerPort);
 
 		String previousPorts[] = new String[2];
 
 		if(REMOTE_PORTS[0].equals(ownerPort)){
 
-			Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[0]);
+			//Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[0]);
 			previousPorts[0] = REMOTE_PORTS[4];
 			previousPorts[1] = REMOTE_PORTS[3];
 		}
 		else if(REMOTE_PORTS[1].equals(ownerPort)){
 
-			Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[1]);
+			//Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[1]);
 			previousPorts[0] = REMOTE_PORTS[0];
 			previousPorts[1] = REMOTE_PORTS[4];
 		}
@@ -336,8 +343,8 @@ public class SimpleDynamoProvider extends ContentProvider {
 			for(int i=2; i<REMOTE_PORTS.length;i++)
 				if(REMOTE_PORTS[i].equals(ownerPort))
 				{
-					Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[i]);
-					Log.d("getReplicatePorts","i: " + i);
+					//Log.d("getReplicatePorts","Port matched: " + REMOTE_PORTS[i]);
+					//Log.d("getReplicatePorts","i: " + i);
 
 					previousPorts[0] = REMOTE_PORTS[i-1];
 					previousPorts[1] = REMOTE_PORTS[i-2];
@@ -359,7 +366,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 			PrintWriter out =
 					new PrintWriter(socket.getOutputStream(), true);
 
-			Log.d(TAG, "Client: PrintWriter Created");
+			//Log.d(TAG, "Client: PrintWriter Created");
 			out.println(message);
 			out.flush();
 
@@ -409,14 +416,14 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 				while(true) {
 
-					Log.d("ServerTask", "Inside while true");
-					Log.d(TAG, "doInBackground: In try");
+					//Log.d("ServerTask", "Inside while true");
+					//Log.d(TAG, "doInBackground: In try");
 					//Server will accept the connection from the client
-					Log.d("ServerTask","Accepting..");
+					//Log.d("ServerTask","Accepting..");
 
 					socket = serverSocket.accept();
 
-					Log.d(TAG, "doInBackground: Accepted");
+					//Log.d(TAG, "doInBackground: Accepted");
 
 					// This will read the message sent on the InputStream
 					BufferedReader in = new BufferedReader(
@@ -427,7 +434,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 					if(line!=null)
 					{
-						Log.d(TAG, "doInBackground: Line is not null");
+						//Log.d(TAG, "doInBackground: Line is not null");
 						String lines[] = line.split("###");
 
 						if(lines[0].equals("ReplicateAndForward")){
@@ -503,17 +510,17 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 
 		query_lock.lock();
-		Log.d("Query" , "Entered Query");
+		//Log.d("Query" , "Entered Query");
 
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 		queryBuilder.setTables("Tb_KeyPair");
 
-		Log.d("Query" , "Selection is " + selection);
+		//Log.d("Query" , "Selection is " + selection);
 
 		try{
 			if(!(selection.equals("@") || selection.equals("*"))){
 
-				Log.d("query", "Only single key is needed");
+				//Log.d("query", "Only single key is needed");
 				String hashKey = genHash(selection);
 				String owner_port = getOwnerPort(hashKey);
 				String port_list[] = getReplicatePorts(owner_port);
@@ -540,11 +547,11 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 							MatrixCursor temp_cursor=new MatrixCursor(new String[] {"key","value"});
 
-							Log.d("Query", "Reply got");
+							//Log.d("Query", "Reply got");
 							String values[] = lines[1].split("\\$\\$\\$");
 
-							Log.d("Query", "key  : "+ values[0]);
-							Log.d("Query", "value  : "+ values[1]);
+							//Log.d("Query", "key  : "+ values[0]);
+							//Log.d("Query", "value  : "+ values[1]);
 
 							temp_cursor.addRow(new Object[]{values[0],values[1]});
 							return temp_cursor;
@@ -554,16 +561,16 @@ public class SimpleDynamoProvider extends ContentProvider {
 			}
 
 			else{
-				Log.d("Query" , "Query type is * or @");
+				//Log.d("Query" , "Query type is * or @");
 				Cursor cursor = getMyData("*");
 
 				if(selection.equals("@"))
 					return cursor;
 
-				Log.d("Query" , "Query type is * , proceeding");
+				//Log.d("Query" , "Query type is * , proceeding");
 				MatrixCursor mcursor = sendQueryRequest(selection);
 
-				Log.d("Query" , "matrix cursor returned");
+				//Log.d("Query" , "matrix cursor returned");
 
 				if(mcursor==null || mcursor.getCount()==0)
 					return cursor;
@@ -586,7 +593,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 	private Cursor getMyData(String parameter)
 	{
-		Log.d("getMyData","Inside getMyData with " + parameter);
+		//Log.d("getMyData","Inside getMyData with " + parameter);
 
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 		queryBuilder.setTables("Tb_KeyPair");
@@ -596,13 +603,13 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 			cursor = queryBuilder.query(myDB.getReadableDatabase(),
 					new String[]{"key","value"}, null, null, null, null,null);
-			Log.d("getMyData","count " + cursor.getCount());
+			//Log.d("getMyData","count " + cursor.getCount());
 
 		}
 		else{
 			cursor = queryBuilder.query(myDB.getReadableDatabase(),
 					new String[]{"key","value"}, "key =?", new String[]{parameter}, null, null,null);
-			Log.d("getMyData","count " + cursor.getCount());
+			//Log.d("getMyData","count " + cursor.getCount());
 		}
 
 		return cursor;
@@ -641,7 +648,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 	private MatrixCursor sendQueryRequest(String selection){
 
-		Log.d("SendQueryRequest" , "Selection : " + selection);
+		//Log.d("SendQueryRequest" , "Selection : " + selection);
 		MatrixCursor temp_cursor=new MatrixCursor(new String[] {"key","value"});
 
 		String message = "Request###" + selection;
@@ -655,14 +662,14 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 			if(reply!=null && !reply.equals("error"))
 			{
-				Log.d("SendQueryRequest", "reply for *");
-				Log.d("SendQueryRequest", "reply is " + reply);
+				//Log.d("SendQueryRequest", "reply for *");
+				//Log.d("SendQueryRequest", "reply is " + reply);
 
 				String lines[] = reply.split("###");
 
 				if(lines[0].equals("Reply")) {
 
-					Log.d("SendQueryRequest", "Data was sent");
+					//Log.d("SendQueryRequest", "Data was sent");
 
 					for(int i=1;i<lines.length;i++){
 
@@ -676,24 +683,24 @@ public class SimpleDynamoProvider extends ContentProvider {
 		if(temp_cursor.getCount()==0)
 			return null;
 
-		Log.d("SendQueryRequest", "cursor has values. sending back cursor");
+		//Log.d("SendQueryRequest", "cursor has values. sending back cursor");
 		return  temp_cursor;
 	}
 
 	private int deleteMyData(String parameter){
 
-		Log.d("deleteMyData","Entering the code");
+		//Log.d("deleteMyData","Entering the code");
 
 		SQLiteDatabase sqlDB = myDB.getWritableDatabase();
 
 
 		if(parameter.equals("*")){
-			Log.d("deleteMyData","Deleting all");
+			//Log.d("deleteMyData","Deleting all");
 
 			return sqlDB.delete("Tb_KeyPair",null, null);
 		}
 		else{
-			Log.d("deleteMyData","Deleting " + parameter);
+			//Log.d("deleteMyData","Deleting " + parameter);
 			return sqlDB.delete("Tb_KeyPair","key = ?", new String[]{parameter});
 		}
 	}
@@ -713,7 +720,7 @@ public class SimpleDynamoProvider extends ContentProvider {
 	{
 		HashMap<String,String> data = new HashMap<String, String>();
 
-		Log.d("recoverMyData" , "Entering the code");
+		//Log.d("recoverMyData" , "Entering the code");
 
 		/*Cursor mycursor = getMyData("*");
 		for (mycursor.moveToFirst(); !mycursor.isAfterLast(); mycursor.moveToNext()) {
@@ -722,25 +729,25 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 		MatrixCursor cursor = sendQueryRequest("*");
 
-		Log.d("recoverMyData" , "matrix cursor formed");
+		//Log.d("recoverMyData" , "matrix cursor formed");
 
 		if(cursor!=null) {
 
-			Log.d("recoverMyData", "before adding data to HashMap");
+			//Log.d("recoverMyData", "before adding data to HashMap");
 
 			for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
 				data.put(cursor.getString(0),cursor.getString(1));
 			}
 
-			Log.d("recoverMyData", "Added data");
+			//Log.d("recoverMyData", "Added data");
 
 			for (Map.Entry<String,String> entry : data.entrySet()) {
-				Log.d("recoverMyData" , "Inside loop");
+				//Log.d("recoverMyData" , "Inside loop");
 				String key = entry.getKey();
 				String value = entry.getValue();
 
-				Log.d("recoverMyData" , "key : " + key);
-				Log.d("recoverMyData" , "value : " + value);
+				//Log.d("recoverMyData" , "key : " + key);
+				//Log.d("recoverMyData" , "value : " + value);
 
 				if(belongsToMe(key))
 					insertIntoDB(key,value);
@@ -750,31 +757,31 @@ public class SimpleDynamoProvider extends ContentProvider {
 
 	private Boolean belongsToMe(String key){
 		try{
-			Log.d("belongsToMe","Starting the code");
+			//Log.d("belongsToMe","Starting the code");
 
 			String hashKey = genHash(key);
 			String owner = getOwnerPort(hashKey);
 
-			Log.d("belongsToMe","hashKey " + hashKey);
-			Log.d("belongsToMe","owner " + owner);
-			Log.d("belongsToMe","myPort " + myPort);
+			//Log.d("belongsToMe","hashKey " + hashKey);
+			//Log.d("belongsToMe","owner " + owner);
+			//Log.d("belongsToMe","myPort " + myPort);
 
 
 			if(owner.equals(myPort))
 				return true;
 
-			Log.d("belongsToMe","About to get previous port ");
+			//Log.d("belongsToMe","About to get previous port ");
 
 			String previous_port[] = getPreviousPorts(myPort);
 
-			Log.d("belongsToMe","p1 " + previous_port[0]);
-			Log.d("belongsToMe","p2 " + previous_port[1]);
+			//Log.d("belongsToMe","p1 " + previous_port[0]);
+			//Log.d("belongsToMe","p2 " + previous_port[1]);
 
 			for(String port : previous_port){
 				if(port.equals(owner))
 					return true;
 			}
-			Log.d("belongsToMe","Returning false");
+			//Log.d("belongsToMe","Returning false");
 			return false;
 
 		}
